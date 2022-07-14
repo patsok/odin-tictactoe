@@ -25,7 +25,7 @@ body {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    border-collapse: collapse;
+    background-image: url('img/ttt_board.svg');
 }
 
 .single-field {
@@ -37,20 +37,31 @@ body {
 }
 
 .single-field>p {
-    font-size: 5rem;
-}
-
-.right {
-    border-right: 1px solid var(--primary-color);
-}
-
-.bottom {
-    border-bottom: 1px solid var(--primary-color);
+    display: none;
 }
 
 button {
     width: 5rem;
     height: 3rem;
+}
+
+.user-X {
+    background-image: url("img/ttt_mark.svg");
+    background-size: 100px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.user-O {
+    background-image: url("img/ttt_circle.svg");
+    background-size: 100px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.user-X.win,
+.user-O.win {
+    filter: brightness(0) saturate(100%) invert(14%) sepia(100%) saturate(3266%) hue-rotate(354deg) brightness(94%) contrast(95%);
 }
 
 .footer {
