@@ -47,23 +47,21 @@ const gameController = (function() {
         }
     }
     const makeMove = (i) => {
-        if (gameController.checkWinCondition() == true) {
-            gameBoard.setGameBoardState();
+        document.querySelector('.controls>p').textContent = '';
+        if (gameBoard.getGameBoardState()[i] == '') {
+            gameBoard.getGameBoardState()[i] = getActivePlayer().getPlayerSign();
             displayController.displayBoardState(gameBoard.getGameBoardState());
-            document.querySelector('.controls>p').textContent = ``;
-        } else if (gameBoard.getGameBoardState()[i] == '') {
-            activePlayer = getActivePlayer();
-            gameBoard.getGameBoardState()[i] = activePlayer.getPlayerSign();
-            displayController.displayBoardState(gameBoard.getGameBoardState());
-            gameController.checkWinCondition();
             changeActivePlayer();
+            if (gameController.checkWinCondition() || gameController.checkTie()) {
+                gameBoard.setGameBoardState();
+
+            }
         }
     }
     const checkWinCondition = () => {
         let gameBoardStateMatrix = [];
         let arr = [];
         let gameBoardState = gameBoard.getGameBoardState();
-        let result = false;
         for (let i in gameBoardState) {
             arr.push(gameBoardState[i]);
             if (i % 3 == 2) {
@@ -71,29 +69,73 @@ const gameController = (function() {
                 arr = [];
             }
         }
-        for (let i = 0; i < gameBoardStateMatrix.length; i++) {
-            let game = gameBoardStateMatrix;
-            let winner = gameController.getActivePlayer().getPlayerName();
-            if (game[i][0] == game[i][1] && game[i][0] == game[i][2] && game[i][0] != '') {
-                result = true;
-            }
-            if (game[0][i] == game[1][i] && game[0][i] == game[2][i] && game[0][i] != '') {
-                result = true;
-            }
-            if (game[0][0] == game[1][1] && game[0][0] == game[2][2] && game[0][0] != '') {
-                result = true;
-            }
-            if (game[2][0] == game[1][1] && game[2][0] == game[0][2] && game[2][0] != '') {
-                result = true;
-            }
-            if (result == true) {
-                document.querySelector('.controls>p').textContent = `You won ${winner}!`;
+        const checkRow = (board) => {
+            for (let i = 0; i < 3; i++) {
+                if (checkSingleRow(board[i])) {
+                    return true;
+                }
             }
         }
-        return result;
+        const checkSingleRow = (row) => {
+            return row[0] == row[1] && row[0] == row[2] && row[0] != '';
+        }
+        const checkDiagonal = (board) => {
+            return board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0] != '';
+        }
+
+        const performCheck = () => {
+            const temporalTransposedGameBoardMatrix = gameBoardStateMatrix[0].map((col, i) => gameBoardStateMatrix.map(row => row[i]));
+            const temporalReversedGameBoardMatrix = [...gameBoardStateMatrix].reverse();
+            if (checkRow(temporalTransposedGameBoardMatrix) ||
+                checkDiagonal(gameBoardStateMatrix) ||
+                checkDiagonal(temporalReversedGameBoardMatrix) ||
+                checkRow(gameBoardStateMatrix)) {
+                return true;
+            }
+        }
+        if (performCheck()) {
+            document.querySelector('.controls>p').textContent = `You won ${gameController.getActivePlayer().getPlayerName()}!`;
+            return true;
+        }
+
+        // for (let i = 0; i < gameBoardStateMatrix.length; i++) {
+        //     let game = gameBoardStateMatrix;
+        //     let winner = gameController.getActivePlayer().getPlayerName();
+        //     if (game[i][0] == game[i][1] && game[i][0] == game[i][2] && game[i][0] != '') {
+        //         result = true;
+        //     }
+        //     if (game[0][i] == game[1][i] && game[0][i] == game[2][i] && game[0][i] != '') {
+        //         result = true;
+        //     }
+        //     if (game[0][0] == game[1][1] && game[0][0] == game[2][2] && game[0][0] != '') {
+        //         result = true;
+        //     }
+        //     if (game[2][0] == game[1][1] && game[2][0] == game[0][2] && game[2][0] != '') {
+        //         result = true;
+        //     }
+        //     if (result == true) {
+        //         document.querySelector('.controls>p').textContent = `You won ${winner}!`;
+        //     }
+        // }
+        // return result;
 
     }
-    return { checkWinCondition, getActivePlayer };
+    const checkTie = () => {
+        if (!gameBoard.getGameBoardState().includes('')) {
+            document.querySelector('.controls>p').textContent = `It's a tie!`
+            return true;
+        }
+    }
+    const restartGame = (() => {
+        const restartButton = document.querySelector('button');
+        restartButton.addEventListener('click', () => {
+            gameBoard.setGameBoardState();
+            displayController.displayBoardState(gameBoard.getGameBoardState());
+            computer.setActivePlayer(false);
+            patryk.setActivePlayer(true);
+        })
+    })();
+    return { checkWinCondition, getActivePlayer, checkTie };
 })()
 
 const Player = (name) => {

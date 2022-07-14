@@ -48,6 +48,11 @@ body {
     border-bottom: 1px solid var(--primary-color);
 }
 
+button {
+    width: 5rem;
+    height: 3rem;
+}
+
 .footer {
     background-color: var(--primary-color);
     color: white;
