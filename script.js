@@ -27,27 +27,32 @@ const gameController = (function() {
         const singleField = document.querySelectorAll('.single-field')
         singleField.forEach((field, i) => {
             field.addEventListener('click', () => {
-                if (document.querySelector('.controls>p').textContent == ``) {
+                const restartButtons = document.querySelectorAll('.controls button');
+                if (restartButtons[1].classList.contains('hidden')) {
                     makeMove(i, field)
                 }
             })
         });
     })()
     const getActivePlayer = () => {
-        if (patryk.getActivePlayer() == true) {
-            activePlayer = patryk;
+        if (player1.getActivePlayer() == true) {
+            activePlayer = player1;
         } else {
-            activePlayer = computer;
+            activePlayer = player2;
         }
         return activePlayer;
-    }
+    };
     const changeActivePlayer = () => {
-        if (patryk.getActivePlayer() == true) {
-            computer.setActivePlayer(true);
-            patryk.setActivePlayer(false);
+        if (player1.getActivePlayer() == true) {
+            player2.setActivePlayer(true);
+            player1.setActivePlayer(false);
         } else {
-            computer.setActivePlayer(false);
-            patryk.setActivePlayer(true);
+            player2.setActivePlayer(false);
+            player1.setActivePlayer(true);
+        }
+        const restartButtons = document.querySelectorAll('.controls button');
+        if (restartButtons[1].classList.contains('hidden')) {
+            document.querySelector('.controls>p').textContent = `Your turn ${getActivePlayer().getPlayerName()}`;
         }
     }
     const makeMove = (i, field) => {
@@ -56,8 +61,26 @@ const gameController = (function() {
             gameBoard.getGameBoardState()[i] = field.classList.add(`user-${getActivePlayer().getPlayerSign()}`);
             gameBoard.getGameBoardState()[i] = getActivePlayer().getPlayerSign();
             displayController.displayBoardState(gameBoard.getGameBoardState());
-            if (gameController.checkWinCondition() || gameController.checkTie()) {
+            if (gameController.checkWinCondition()) {
                 gameBoard.setGameBoardState();
+                const restartButtons = document.querySelectorAll('.controls button');
+                restartButtons[0].classList.toggle('hidden');
+                restartButtons[1].classList.toggle('hidden');
+                if (player1.getActivePlayer()) {
+                    let win = player1.addWin();
+                    const playersResults = document.querySelectorAll('.player-container p:nth-child(2n)');
+                    playersResults[0].textContent = win;
+                } else {
+                    let win = player2.addWin();
+                    const playersResults = document.querySelectorAll('.player-container p:nth-child(2n)');
+                    playersResults[1].textContent = win;
+                }
+            }
+            if (gameController.checkTie()) {
+                gameBoard.setGameBoardState();
+                const restartButtons = document.querySelectorAll('.controls button');
+                restartButtons[0].classList.toggle('hidden');
+                restartButtons[1].classList.toggle('hidden');
             }
             changeActivePlayer();
         }
@@ -135,12 +158,12 @@ const gameController = (function() {
         }
     }
     const restartGame = (() => {
-        const restartButton = document.querySelector('button');
-        restartButton.addEventListener('click', () => {
+        const restartButton = document.querySelectorAll('.controls button');
+        restartButton[0].addEventListener('click', () => {
             gameBoard.setGameBoardState();
             displayController.displayBoardState(gameBoard.getGameBoardState());
-            computer.setActivePlayer(false);
-            patryk.setActivePlayer(true);
+            player2.setActivePlayer(false);
+            player1.setActivePlayer(true);
             document.querySelector('.controls>p').textContent = ``;
             const singleField = document.querySelectorAll('.single-field')
             singleField.forEach(field => {
@@ -150,17 +173,35 @@ const gameController = (function() {
             });
         })
     })();
-    return { checkWinCondition, getActivePlayer, checkTie };
+    const playNextGame = (() => {
+        const restartButton = document.querySelectorAll('.controls button');
+        restartButton[1].addEventListener('click', () => {
+            gameBoard.setGameBoardState();
+            displayController.displayBoardState(gameBoard.getGameBoardState());
+            document.querySelector('.controls>p').textContent = ``;
+            const singleField = document.querySelectorAll('.single-field')
+            singleField.forEach(field => {
+                field.classList.remove(`user-O`);
+                field.classList.remove(`user-X`);
+                field.classList.remove(`win`);
+            });
+            restartButton[0].classList.toggle('hidden');
+            restartButton[1].classList.toggle('hidden');
+            document.querySelector('.controls>p').textContent = `Your turn ${getActivePlayer().getPlayerName()}`
+
+        })
+    })();
+    return { checkWinCondition, getActivePlayer, checkTie, restartGame };
 })()
 
 const Player = (name) => {
     let playerSign = '';
     let activePlayer = '';
+    let wins = 0;
     const setPlayerSign = (sign) => {
         playerSign = sign;
     }
     const getPlayerSign = () => {
-
         return playerSign;
     }
     const setActivePlayer = (value) => {
@@ -169,15 +210,80 @@ const Player = (name) => {
     const getActivePlayer = () => {
         return activePlayer;
     };
+    const setPlayerName = (num) => {
+        const inputs = document.querySelectorAll('input');
+        name = inputs[num].value;
+    };
     const getPlayerName = () => {
         return name;
+    };
+    const addWin = () => {
+        wins++;
+        return wins;
     }
-    return { getPlayerSign, setPlayerSign, setActivePlayer, getActivePlayer, getPlayerName };
+    const setWins = () => {
+        wins = 0;
+    }
+    return { getPlayerSign, setPlayerSign, setActivePlayer, getActivePlayer, getPlayerName, setPlayerName, addWin, setWins };
 }
 
-const patryk = Player('Patryk');
-const computer = Player('Morpheus');
-patryk.setPlayerSign('X');
-computer.setPlayerSign('O');
-patryk.setActivePlayer(true);
-computer.setActivePlayer(false);
+// const patryk = Player('Patryk');
+// const computer = Player('Morpheus');
+// patryk.setPlayerSign('X');
+// computer.setPlayerSign('O');
+// patryk.setActivePlayer(true);
+// computer.setActivePlayer(false);
+
+const player1 = Player('Temp1');
+const player2 = Player('Temp2');
+
+const gameStartInterface = (function() {
+    const toggleGameVisibility = () => {
+        document.querySelector('.game-container').classList.remove('hidden');
+    }
+    const toggleFormVisibility = () => {
+        document.querySelector('form').classList.toggle('hidden');
+    }
+    const startPlayersGame = () => {
+        toggleFormVisibility();
+    }
+    const startAIGame = () => {
+
+    }
+    const startGame = (e) => {
+        if (form.checkValidity() == true) {
+            e.preventDefault();
+            toggleGameVisibility();
+            toggleFormVisibility();
+            setPlayers();
+            player1.setWins();
+            player2.setWins();
+            const playersResults = document.querySelectorAll('.player-container p:nth-child(2n)');
+            playersResults[0].textContent = 0;
+            playersResults[1].textContent = 0;
+            const restartButton = document.querySelectorAll('.controls button');
+            restartButton[0].classList.remove('hidden');
+            restartButton[1].classList.add('hidden');
+            // gameController.restartGame();
+        }
+    }
+    const startButton = document.querySelectorAll('.header button')
+    startButton[0].addEventListener('click', startAIGame);
+    startButton[1].addEventListener('click', startPlayersGame);
+    const form = document.querySelector('form');
+    form.addEventListener('submit', e => startGame(e));
+
+    const setPlayers = () => {
+        const playersNames = document.querySelectorAll('.player-container p');
+        player1.setPlayerName(0);
+        player2.setPlayerName(1);
+        player1.setPlayerSign('X');
+        player2.setPlayerSign('O');
+        player1.setActivePlayer(true);
+        player2.setActivePlayer(false);
+        playersNames[0].textContent = player1.getPlayerName();
+        playersNames[2].textContent = player2.getPlayerName();
+        document.querySelector('.controls>p').textContent = `Your turn ${gameController.getActivePlayer().getPlayerName()}`
+
+    }
+})()

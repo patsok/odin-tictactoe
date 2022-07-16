@@ -11,39 +11,70 @@
 </head>
 
 <body>
-    <div class="header">Tic Tac Toe</div>
-    <div class="content">
-        <div class="single-field field1 row1 col1">
-            <p></p>
-        </div>
-        <div class="single-field field2 row1 col2">
-            <p></p>
-        </div>
-        <div class="single-field field3 row1 col3">
-            <p></p>
-        </div>
-        <div class="single-field field4 row2 col1">
-            <p></p>
-        </div>
-        <div class="single-field field5 row2 col2">
-            <p></p>
-        </div>
-        <div class="single-field field6 row2 col3">
-            <p></p>
-        </div>
-        <div class="single-field field7 row3 col1">
-            <p></p>
-        </div>
-        <div class="single-field field8 row3 col2">
-            <p></p>
-        </div>
-        <div class="single-field field9 row3 col3">
-            <p></p>
-        </div>
+    <div class="header">
+        <p>Tic Tac Toe</p>
+        <div class="mode-buttons"><button type="button" disabled>You vs AI</button><button type="button">Two players</button></div>
+        <form action="" class="hidden" method="get">
+            <div class="fields">
+                <div class="input-field">
+                    <label for="firstplayer-name">1st player</label>
+                    <input type="text" name="firstplayer-name" id="firstplayer-name" required>
+                </div>
+                <div class="input-field">
+                    <label for="secondplayer-name">2nd player</label>
+                    <input type="text" name="secondplayer-name" id="secondplayer-name" required>
+                </div>
+            </div>
+            <div class="input-field">
+                <button type="submit">Start game</button>
+            </div>
+        </form>
     </div>
-    <div class="controls">
-        <p></p>
-        <button type='button'>Restart</button>
+    <div class="game-container hidden">
+        <div class="game-interface">
+            <div class="first player-container">
+                <p>Nick</p>
+                <p class="first result">0</p>
+            </div>
+            <div class="content">
+                <div class="single-field field1 row1 col1">
+                    <p></p>
+                </div>
+                <div class="single-field field2 row1 col2">
+                    <p></p>
+                </div>
+                <div class="single-field field3 row1 col3">
+                    <p></p>
+                </div>
+                <div class="single-field field4 row2 col1">
+                    <p></p>
+                </div>
+                <div class="single-field field5 row2 col2">
+                    <p></p>
+                </div>
+                <div class="single-field field6 row2 col3">
+                    <p></p>
+                </div>
+                <div class="single-field field7 row3 col1">
+                    <p></p>
+                </div>
+                <div class="single-field field8 row3 col2">
+                    <p></p>
+                </div>
+                <div class="single-field field9 row3 col3">
+                    <p></p>
+                </div>
+            </div>
+            <div class="second player-container">
+                <p>Nick</p>
+                <p class="second result">0</p>
+            </div>
+        </div>
+        <div class="controls">
+
+            <button type='button'>Restart</button><button type='button' class="hidden">Play Again</button>
+            <p></p>
+        </div>
     </div>
     <div class="footer">
         <div class="author">Made with <img src="./img/heart.png" width="15rem"> by <a href="https://github.com/patsok" target="_blank">Falco</a></div>
