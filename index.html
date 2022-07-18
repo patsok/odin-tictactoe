@@ -13,11 +13,11 @@
 <body>
     <div class="header">
         <p>Tic Tac Toe</p>
-        <div class="mode-buttons"><button type="button" disabled>You vs AI</button><button type="button">Two players</button></div>
+        <div class="mode-buttons"><button type="button">You vs AI</button><button type="button">Two players</button><button type="button" class="hidden">Go back</button></div>
         <form action="" class="hidden" method="get">
             <div class="fields">
                 <div class="input-field">
-                    <label for="firstplayer-name">1st player</label>
+                    <label for="firstplayer-name">1st player</label><label for="firstplayer-name" class="hidden">Your nickname</label>
                     <input type="text" name="firstplayer-name" id="firstplayer-name" required>
                 </div>
                 <div class="input-field">
@@ -26,8 +26,17 @@
                 </div>
             </div>
             <div class="input-field">
+                <label>Choose difficulty</label>
+                <div class="difficulty-buttons">
+                    <button type="submit">Easy</button>
+                    <button type="submit" disabled>Hard</button>
+                    <button type="submit" disabled>Impossible</button>
+                </div>
+            </div>
+            <div class="input-field">
                 <button type="submit">Start game</button>
             </div>
+
         </form>
     </div>
     <div class="game-container hidden">
