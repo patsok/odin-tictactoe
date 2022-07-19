@@ -319,27 +319,29 @@ const gameStartInterface = (function() {
         showElement('form');
         const labels = document.querySelectorAll('label');
         const inputFields = document.querySelectorAll('.input-field');
-        const inputs = inputFields[1].querySelector('input');
+        const inputs = document.querySelectorAll('.input-field input');
         showElement(labels[0]);
         hideElement(labels[1]);
         showElement(inputFields[1]);
         hideElement(inputFields[2]);
         showElement(inputFields[3]);
-        inputs.value = '';
-        inputs.disabled = false;
+        inputs[0].value = '';
+        inputs[1].value = '';
+        inputs[1].disabled = false;
     }
     const startAIGame = () => {
         showElement('form');
         const labels = document.querySelectorAll('label');
         const inputFields = document.querySelectorAll('.input-field');
-        const inputs = inputFields[1].querySelector('input');
+        const inputs = document.querySelectorAll('.input-field input');
         hideElement(labels[0]);
         showElement(labels[1]);
         hideElement(inputFields[1]);
         hideElement(inputFields[3]);
         showElement(inputFields[2]);
-        inputs.value = 'Computer';
-        inputs.disabled = true;
+        inputs[0].value = '';
+        inputs[1].value = 'Computer';
+        inputs[1].disabled = true;
     }
     const startGame = (e) => {
         if (form.checkValidity() == true) {
@@ -363,7 +365,6 @@ const gameStartInterface = (function() {
     const setInterface = () => {
         hideElement('.game-container');
         toggleButtonVisibility();
-
         startButton[0].disabled = false;
         startButton[1].disabled = false;
     }
