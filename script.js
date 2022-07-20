@@ -73,7 +73,8 @@ const gameController = (function() {
             gameBoard.getGameBoardState()[i] = field.classList.add(`user-${getActivePlayer().getPlayerSign()}`);
             gameBoard.getGameBoardState()[i] = getActivePlayer().getPlayerSign();
             displayController.displayBoardState(gameBoard.getGameBoardState());
-            if (gameController.checkWinCondition()) {
+
+            if (gameController.checkWinCondition(gameBoard.getGameBoardState(), getActivePlayer().getPlayerSign())) {
                 gameBoard.setGameBoardState();
                 const restartButtons = document.querySelectorAll('.controls button');
                 restartButtons[0].classList.toggle('hidden');
@@ -116,7 +117,9 @@ const gameController = (function() {
         } else if (difficulty == 'hard') {
             console.log('hard')
         } else {
-            console.log('impossible')
+            const singleField = document.querySelectorAll('.single-field')
+            let move = minimax(gameBoard.getGameBoardState(), 'O').index;
+            makeMove(move, singleField[move]);
         }
         const singleField = document.querySelectorAll('.single-field')
         singleField.forEach(field => {
@@ -124,10 +127,10 @@ const gameController = (function() {
         })
     }
 
-    const checkWinCondition = () => {
+    const checkWinCondition = (board, player) => {
         let gameBoardStateMatrix = [];
         let arr = [];
-        let gameBoardState = gameBoard.getGameBoardState();
+        let gameBoardState = board;
         for (let i in gameBoardState) {
             arr.push(gameBoardState[i]);
             if (i % 3 == 2) {
@@ -135,17 +138,16 @@ const gameController = (function() {
                 arr = [];
             }
         }
-
-        const checkRow = (board, pos) => {
+        const checkRow = (board, pos, player) => {
             for (let i = 0; i < 3; i++) {
-                if (checkSingleRow(board[i], i, pos)) {
+                if (checkSingleRow(board[i], i, pos, player)) {
                     return true;
                 }
             }
         }
 
-        const checkSingleRow = (row, i, pos) => {
-            if (row[0] == row[1] && row[0] == row[2] && row[0] != '') {
+        const checkSingleRow = (row, i, pos, player) => {
+            if (row[0] == row[1] && row[0] == row[2] && row[0] != '' && row[0] == player) {
                 let winningFields;
                 if (pos == "rows") {
                     winningFields = document.querySelectorAll(`.single-field.row${i+1}`);
@@ -159,8 +161,8 @@ const gameController = (function() {
                 return true;
             }
         }
-        const checkDiagonal = (board, pos) => {
-            if (board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0] != '') {
+        const checkDiagonal = (board, pos, player) => {
+            if (board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0] != '' && board[0][0] == player) {
                 if (pos == "mainDiagonal") {
                     for (let i = 0; i < 3; i++) {
                         document.querySelector(`.single-field.col${i+1}.row${i+1}`).classList.add('win');
@@ -174,19 +176,56 @@ const gameController = (function() {
                 return true;
             }
         }
-
-        const performCheck = () => {
+        const performCheck = (player) => {
             const temporalTransposedGameBoardMatrix = gameBoardStateMatrix[0].map((col, i) => gameBoardStateMatrix.map(row => row[i]));
             const temporalReversedGameBoardMatrix = [...gameBoardStateMatrix].reverse();
-            if (checkRow(temporalTransposedGameBoardMatrix, "cols") ||
-                checkDiagonal(gameBoardStateMatrix, "mainDiagonal") ||
-                checkDiagonal(temporalReversedGameBoardMatrix, "secondaryDiagonal") ||
-                checkRow(gameBoardStateMatrix, "rows")) {
+            if (checkRow(temporalTransposedGameBoardMatrix, "cols", player) ||
+                checkDiagonal(gameBoardStateMatrix, "mainDiagonal", player) ||
+                checkDiagonal(temporalReversedGameBoardMatrix, "secondaryDiagonal", player) ||
+                checkRow(gameBoardStateMatrix, "rows", player)) {
                 return true;
             }
         }
-        if (performCheck()) {
+        if (performCheck(player)) {
             document.querySelector('.controls>p').textContent = `You won ${gameController.getActivePlayer().getPlayerName()}!`;
+            return true;
+        }
+    }
+
+    const checkWinConditionMinimax = (board, player) => {
+        let gameBoardStateMatrix = [];
+        let arr = [];
+        let gameBoardState = board;
+        for (let i in gameBoardState) {
+            arr.push(gameBoardState[i]);
+            if (i % 3 == 2) {
+                gameBoardStateMatrix.push(arr);
+                arr = [];
+            }
+        }
+        const checkRow = (board, player) => {
+            for (let i = 0; i < 3; i++) {
+                if (checkSingleRow(board[i], player)) {
+                    return true;
+                }
+            }
+        }
+        const checkSingleRow = (row, player) => {
+            return row[0] == row[1] && row[0] == row[2] && row[0] != '' && row[0] == player
+        }
+        const checkDiagonal = (board, player) => {
+            return board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0] != '' && board[0][0] == player
+        }
+
+        const performCheck = (player) => {
+            const temporalTransposedGameBoardMatrix = gameBoardStateMatrix[0].map((col, i) => gameBoardStateMatrix.map(row => row[i]));
+            const temporalReversedGameBoardMatrix = [...gameBoardStateMatrix].reverse();
+            return checkRow(temporalTransposedGameBoardMatrix, player) ||
+                checkDiagonal(gameBoardStateMatrix, player) ||
+                checkDiagonal(temporalReversedGameBoardMatrix, player) ||
+                checkRow(gameBoardStateMatrix, player)
+        }
+        if (performCheck(player)) {
             return true;
         }
     }
@@ -244,7 +283,7 @@ const gameController = (function() {
             }
         })
     })();
-    return { checkWinCondition, getActivePlayer, checkTie, restartGame };
+    return { checkWinCondition, getActivePlayer, checkTie, restartGame, checkWinConditionMinimax };
 })()
 
 const Player = (name) => {
@@ -397,3 +436,67 @@ const gameStartInterface = (function() {
 
     return { getDifficulty };
 })()
+
+function minimax(newBoard, player) {
+    newBoard = [...newBoard];
+    newBoard = newBoard.map((empty, index) => {
+        if (typeof empty == "number") {
+            return '';
+        }
+        return empty;
+    });
+    var availSpots = newBoard.map((empty, index) => {
+        if (empty == '') {
+            return index;
+        }
+        return false;
+    }).filter(empty => typeof empty == "number");
+    if (gameController.checkWinConditionMinimax(newBoard, 'X')) {
+        return { score: -10 };
+    } else if (gameController.checkWinConditionMinimax(newBoard, 'O')) {
+        return { score: 10 };
+    } else if (availSpots.length === 0) {
+        return { score: 0 };
+    }
+    newBoard = newBoard.map((empty, index) => {
+        if (empty == '') {
+            return index;
+        }
+        return empty;
+    })
+    var moves = [];
+    for (var i = 0; i < availSpots.length; i++) {
+        var move = {};
+        move.index = newBoard[availSpots[i]]
+        newBoard[availSpots[i]] = player;
+        if (player == 'O') {
+            var result = minimax(newBoard, 'X');
+            move.score = result.score;
+        } else {
+            var result = minimax(newBoard, 'O');
+            move.score = result.score;
+        }
+
+        newBoard[availSpots[i]] = move.index;
+        moves.push(move);
+    }
+    var bestMove;
+    if (player === 'O') {
+        var bestScore = -10000;
+        for (var i = 0; i < moves.length; i++) {
+            if (moves[i].score > bestScore) {
+                bestScore = moves[i].score;
+                bestMove = i;
+            }
+        }
+    } else {
+        var bestScore = 10000;
+        for (var i = 0; i < moves.length; i++) {
+            if (moves[i].score < bestScore) {
+                bestScore = moves[i].score;
+                bestMove = i;
+            }
+        }
+    }
+    return moves[bestMove];
+}
