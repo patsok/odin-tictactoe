@@ -115,7 +115,9 @@ const gameController = (function() {
             field = singleField[index];
             makeMove(index, field)
         } else if (difficulty == 'hard') {
-            console.log('hard')
+            const singleField = document.querySelectorAll('.single-field')
+            let move = minimaxHard(gameBoard.getGameBoardState(), 'O').index;
+            makeMove(move, singleField[move]);
         } else {
             const singleField = document.querySelectorAll('.single-field')
             let move = minimax(gameBoard.getGameBoardState(), 'O').index;
@@ -254,7 +256,7 @@ const gameController = (function() {
             const options = [0, 2, 4, 6, 8];
             const index = options[Math.floor(Math.random() * options.length)];
             field = singleField[index];
-            const timeout = setTimeout(makeMove(field, index), 500);
+            const timeout = setTimeout(makeMove(index, field), 200);
         }
     };
     const restartGameQuery = (() => {
@@ -283,7 +285,11 @@ const gameController = (function() {
             }
             changeActivePlayer();
             if (getActivePlayer().getPlayerName() == 'Computer') {
-                setTimeout(makeComputerMove, 500);
+                const singleField = document.querySelectorAll('.single-field')
+                const options = [0, 2, 4, 6, 8];
+                const index = options[Math.floor(Math.random() * options.length)];
+                field = singleField[index];
+                const timeout = setTimeout(makeMove(index, field), 100);
             }
         })
     })();
@@ -443,7 +449,7 @@ const gameStartInterface = (function() {
 
 function minimax(newBoard, player) {
     newBoard = [...newBoard];
-    newBoard = newBoard.map((empty, index) => {
+    newBoard = newBoard.map((empty) => {
         if (typeof empty == "number") {
             return '';
         }
@@ -502,5 +508,61 @@ function minimax(newBoard, player) {
             }
         }
     }
+    return moves[bestMove];
+}
+
+function minimaxHard(newBoard, player) {
+    newBoard = [...newBoard];
+    newBoard = newBoard.map((empty) => {
+        if (typeof empty == "number") {
+            return '';
+        }
+        return empty;
+    });
+    var availSpots = newBoard.map((empty, index) => {
+        if (empty == '') {
+            return index;
+        }
+        return false;
+    }).filter(empty => typeof empty == "number");
+    if (gameController.checkWinConditionMinimax(newBoard, 'X')) {
+        return { score: -10 };
+    } else if (gameController.checkWinConditionMinimax(newBoard, 'O')) {
+        return { score: 10 };
+    } else if (availSpots.length === 0) {
+        return { score: 0 };
+    }
+    newBoard = newBoard.map((empty, index) => {
+        if (empty == '') {
+            return index;
+        }
+        return empty;
+    })
+    var moves = [];
+    for (var i = 0; i < availSpots.length; i++) {
+        var move = {};
+        move.index = newBoard[availSpots[i]]
+        newBoard[availSpots[i]] = player;
+        if (player == 'O') {
+            var result = minimax(newBoard, 'X');
+            move.score = result.score;
+        } else {
+            var result = minimax(newBoard, 'O');
+            move.score = result.score;
+        }
+
+        newBoard[availSpots[i]] = move.index;
+        moves.push(move);
+    }
+    var bestMove;
+    if (availSpots.length > 3) {
+        moves = moves.sort((a, b) => (b.score - a.score)).slice(0, Math.ceil(moves.length / 2));
+        bestMove = Math.floor(Math.random() * moves.length);
+    } else {
+        moves = moves.sort((a, b) => (b.score - a.score)).slice(0, 1);
+        bestMove = 0;
+    }
+    console.log(moves);
+    console.log(bestMove);
     return moves[bestMove];
 }
