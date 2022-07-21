@@ -250,7 +250,11 @@ const gameController = (function() {
             field.classList.remove(`win`);
         });
         if (getActivePlayer().getPlayerName() == 'Computer') {
-            const timeout = setTimeout(makeComputerMove, 500);
+            const singleField = document.querySelectorAll('.single-field')
+            const options = [0, 2, 4, 6, 8];
+            const index = options[Math.floor(Math.random() * options.length)];
+            field = singleField[index];
+            const timeout = setTimeout(makeMove(field, index), 500);
         }
     };
     const restartGameQuery = (() => {
