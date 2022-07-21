@@ -17,45 +17,48 @@ const gameBoard = (function() {
     const getGameBoardState = () => {
         return gameBoardState;
     }
-    return { getGameBoardState, setGameBoardState };
+    const restartGameBoardStateDisplay = () => {
+        setGameBoardState();
+        displayController.displayBoardState(gameBoard.getGameBoardState());
+        document.querySelectorAll('.single-field').forEach(field => {
+            field.classList.remove(`user-O`, `user-X`, `win`);
+        });
+    }
+    return { getGameBoardState, setGameBoardState, restartGameBoardStateDisplay };
 })()
 
 const gameController = (function() {
+    const singleField = document.querySelectorAll('.single-field');
     const getUserChoice = (() => {
-        const singleField = document.querySelectorAll('.single-field');
         singleField.forEach((field, i) => {
             field.addEventListener('click', () => {
                 const restartButtons = document.querySelectorAll('.controls button');
                 if (restartButtons[1].classList.contains('hidden')) {
                     let check = makePlayerMove(i, field);
                     if (getActivePlayer().getPlayerName() == 'Computer' && !check) {
-                        singleField.forEach(field => {
-                            field.classList.add('no-click');
-                        })
-                        const timeout = setTimeout(makeComputerMove, 500);
+                        toggleClickableFields() //unclickable
+                        setTimeout(makeComputerMove, 500);
                     }
                 }
             })
         });
     })()
     const getActivePlayer = () => {
-        if (player1.getActivePlayer() == true) {
-            activePlayer = player1;
-        } else {
-            activePlayer = player2;
-        }
+        player1.getActivePlayer() ? activePlayer = player1 : activePlayer = player2;
         return activePlayer;
     };
+    const restartButton = document.querySelector('.controls button:first-child');
+    const playAgainButton = document.querySelector('.controls button:nth-child(2)');
+
     const changeActivePlayer = () => {
-        if (player1.getActivePlayer() == true) {
+        if (player1.getActivePlayer()) {
             player2.setActivePlayer(true);
             player1.setActivePlayer(false);
         } else {
             player2.setActivePlayer(false);
             player1.setActivePlayer(true);
         }
-        const restartButtons = document.querySelectorAll('.controls button');
-        if (restartButtons[1].classList.contains('hidden')) {
+        if (playAgainButton.classList.contains('hidden')) {
             if (getActivePlayer().getPlayerName() == 'Computer') {
                 document.querySelector('.controls>p').textContent = `Computer's turn`;
             } else {
@@ -69,32 +72,23 @@ const gameController = (function() {
     }
     const makeMove = (i, field) => {
         document.querySelector('.controls>p').textContent = '';
+        let activePlayerSign = getActivePlayer().getPlayerSign();
         if (gameBoard.getGameBoardState()[i] == '') {
-            gameBoard.getGameBoardState()[i] = field.classList.add(`user-${getActivePlayer().getPlayerSign()}`);
-            gameBoard.getGameBoardState()[i] = getActivePlayer().getPlayerSign();
+            gameBoard.getGameBoardState()[i] = field.classList.add(`user-${activePlayerSign}`);
+            gameBoard.getGameBoardState()[i] = activePlayerSign;
             displayController.displayBoardState(gameBoard.getGameBoardState());
-
-            if (gameController.checkWinCondition(gameBoard.getGameBoardState(), getActivePlayer().getPlayerSign())) {
+            if (checkWinCondition(gameBoard.getGameBoardState(), activePlayerSign)) {
+                const playersResults = document.querySelectorAll('.player-container p:nth-child(2n)');
+                player1.getActivePlayer() ? playersResults[0].textContent = player1.addWin() : playersResults[1].textContent = player2.addWin();
                 gameBoard.setGameBoardState();
-                const restartButtons = document.querySelectorAll('.controls button');
-                restartButtons[0].classList.toggle('hidden');
-                restartButtons[1].classList.toggle('hidden');
-                if (player1.getActivePlayer()) {
-                    let win = player1.addWin();
-                    const playersResults = document.querySelectorAll('.player-container p:nth-child(2n)');
-                    playersResults[0].textContent = win;
-                } else {
-                    let win = player2.addWin();
-                    const playersResults = document.querySelectorAll('.player-container p:nth-child(2n)');
-                    playersResults[1].textContent = win;
-                }
+                restartButton.classList.toggle('hidden');
+                playAgainButton.classList.toggle('hidden');
                 return true;
             }
-            if (gameController.checkTie()) {
+            if (checkTie()) {
                 gameBoard.setGameBoardState();
-                const restartButtons = document.querySelectorAll('.controls button');
-                restartButtons[0].classList.toggle('hidden');
-                restartButtons[1].classList.toggle('hidden');
+                restartButton.classList.toggle('hidden');
+                playAgainButton.classList.toggle('hidden');
                 return true;
             }
             changeActivePlayer();
@@ -102,31 +96,21 @@ const gameController = (function() {
     }
 
     const makeComputerMove = () => {
-        const difficulty = gameStartInterface.getDifficulty();
+        const difficulty = gameSetUp.getDifficulty();
+        let move;
         if (difficulty == 'easy') {
-            const singleField = document.querySelectorAll('.single-field')
             const indexedEmptyBoard = gameBoard.getGameBoardState().map((empty, index) => {
                 if (empty == '') {
                     return index;
                 }
                 return false;
             }).filter(empty => typeof empty == "number");
-            const index = indexedEmptyBoard[Math.floor(Math.random() * indexedEmptyBoard.length)];
-            field = singleField[index];
-            makeMove(index, field)
-        } else if (difficulty == 'hard') {
-            const singleField = document.querySelectorAll('.single-field')
-            let move = minimaxHard(gameBoard.getGameBoardState(), 'O').index;
-            makeMove(move, singleField[move]);
+            move = indexedEmptyBoard[Math.floor(Math.random() * indexedEmptyBoard.length)];
         } else {
-            const singleField = document.querySelectorAll('.single-field')
-            let move = minimax(gameBoard.getGameBoardState(), 'O').index;
-            makeMove(move, singleField[move]);
+            move = algorithmAI.minimax(gameBoard.getGameBoardState(), 'O', difficulty).index;
         }
-        const singleField = document.querySelectorAll('.single-field')
-        singleField.forEach(field => {
-            field.classList.remove('no-click');
-        })
+        makeMove(move, singleField[move]);
+        toggleClickableFields(); //clickable
     }
 
     const checkWinCondition = (board, player) => {
@@ -194,43 +178,6 @@ const gameController = (function() {
         }
     }
 
-    const checkWinConditionMinimax = (board, player) => {
-        let gameBoardStateMatrix = [];
-        let arr = [];
-        let gameBoardState = board;
-        for (let i in gameBoardState) {
-            arr.push(gameBoardState[i]);
-            if (i % 3 == 2) {
-                gameBoardStateMatrix.push(arr);
-                arr = [];
-            }
-        }
-        const checkRow = (board, player) => {
-            for (let i = 0; i < 3; i++) {
-                if (checkSingleRow(board[i], player)) {
-                    return true;
-                }
-            }
-        }
-        const checkSingleRow = (row, player) => {
-            return row[0] == row[1] && row[0] == row[2] && row[0] != '' && row[0] == player
-        }
-        const checkDiagonal = (board, player) => {
-            return board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0] != '' && board[0][0] == player
-        }
-
-        const performCheck = (player) => {
-            const temporalTransposedGameBoardMatrix = gameBoardStateMatrix[0].map((col, i) => gameBoardStateMatrix.map(row => row[i]));
-            const temporalReversedGameBoardMatrix = [...gameBoardStateMatrix].reverse();
-            return checkRow(temporalTransposedGameBoardMatrix, player) ||
-                checkDiagonal(gameBoardStateMatrix, player) ||
-                checkDiagonal(temporalReversedGameBoardMatrix, player) ||
-                checkRow(gameBoardStateMatrix, player)
-        }
-        if (performCheck(player)) {
-            return true;
-        }
-    }
     const checkTie = () => {
         if (!gameBoard.getGameBoardState().includes('')) {
             document.querySelector('.controls>p').textContent = `It's a tie!`
@@ -238,62 +185,35 @@ const gameController = (function() {
         }
     }
     const restartGame = () => {
-        gameBoard.setGameBoardState();
-        displayController.displayBoardState(gameBoard.getGameBoardState());
+        gameBoard.restartGameBoardStateDisplay();
+        firstComputerMove();
+    };
+
+    const playNextGame = () => {
+        document.querySelector('.controls>p').textContent = ``;
+        restartButton.classList.toggle('hidden');
+        playAgainButton.classList.toggle('hidden');
+        changeActivePlayer();
+        firstComputerMove();
+    };
+
+    const firstComputerMove = () => {
         if (getActivePlayer().getPlayerName() == 'Computer') {
+            toggleClickableFields(); //unclickable
             document.querySelector('.controls>p').textContent = `Computer's turn`;
+            const index = [0, 2, 4, 6, 8][Math.floor(Math.random() * 5)];
+            setTimeout(() => toggleClickableFields(), makeMove(index, singleField[index]), 500) // clickable
         } else {
             document.querySelector('.controls>p').textContent = `Your turn ${getActivePlayer().getPlayerName()}`;
-        };
-        const singleField = document.querySelectorAll('.single-field');
-        singleField.forEach(field => {
-            field.classList.remove(`user-O`);
-            field.classList.remove(`user-X`);
-            field.classList.remove(`win`);
-        });
-        if (getActivePlayer().getPlayerName() == 'Computer') {
-            const singleField = document.querySelectorAll('.single-field')
-            const options = [0, 2, 4, 6, 8];
-            const index = options[Math.floor(Math.random() * options.length)];
-            field = singleField[index];
-            const timeout = setTimeout(makeMove(index, field), 200);
         }
-    };
-    const restartGameQuery = (() => {
-        const restartButton = document.querySelectorAll('.controls button');
-        restartButton[0].addEventListener('click', restartGame);
-    })();
+    }
 
-    const playNextGame = (() => {
-        const restartButton = document.querySelectorAll('.controls button');
-        restartButton[1].addEventListener('click', () => {
-            gameBoard.setGameBoardState();
-            displayController.displayBoardState(gameBoard.getGameBoardState());
-            document.querySelector('.controls>p').textContent = ``;
-            const singleField = document.querySelectorAll('.single-field')
-            singleField.forEach(field => {
-                field.classList.remove(`user-O`);
-                field.classList.remove(`user-X`);
-                field.classList.remove(`win`);
-            });
-            restartButton[0].classList.toggle('hidden');
-            restartButton[1].classList.toggle('hidden');
-            if (getActivePlayer().getPlayerName() == 'Computer') {
-                document.querySelector('.controls>p').textContent = `Computer's turn`;
-            } else {
-                document.querySelector('.controls>p').textContent = `Your turn ${getActivePlayer().getPlayerName()}`;
-            }
-            changeActivePlayer();
-            if (getActivePlayer().getPlayerName() == 'Computer') {
-                const singleField = document.querySelectorAll('.single-field')
-                const options = [0, 2, 4, 6, 8];
-                const index = options[Math.floor(Math.random() * options.length)];
-                field = singleField[index];
-                const timeout = setTimeout(makeMove(index, field), 100);
-            }
+    const toggleClickableFields = () => {
+        singleField.forEach(field => {
+            field.classList.toggle('no-click');
         })
-    })();
-    return { checkWinCondition, getActivePlayer, checkTie, restartGame, checkWinConditionMinimax };
+    }
+    return { checkWinCondition, getActivePlayer, checkTie, restartGame, playNextGame };
 })()
 
 const Player = (name) => {
@@ -332,7 +252,7 @@ const Player = (name) => {
 const player1 = Player('Player 1');
 const player2 = Player('Computer');
 
-const gameStartInterface = (function() {
+const gameSetUp = (function() {
     const startButton = document.querySelectorAll('.header button')
     const form = document.querySelector('form');
     let difficulty = '';
@@ -443,126 +363,128 @@ const gameStartInterface = (function() {
         playersNames[2].textContent = player2.getPlayerName();
         document.querySelector('.controls>p').textContent = `Your turn ${gameController.getActivePlayer().getPlayerName()}`
     }
+    const restartGameQuery = (() => {
+        document.querySelector('.controls button:first-child').addEventListener('click', gameController.restartGame);
+    })();
+
+    const playNextGameQuery = (() => {
+        document.querySelector('.controls button:nth-child(2)').addEventListener('click', gameController.playNextGame);
+    })();
 
     return { getDifficulty };
 })()
 
-function minimax(newBoard, player) {
-    newBoard = [...newBoard];
-    newBoard = newBoard.map((empty) => {
-        if (typeof empty == "number") {
-            return '';
+let algorithmAI = (function() {
+    let minimax = (newBoard, player, difficulty) => {
+        newBoard = [...newBoard];
+        var availSpots = newBoard.map((empty, index) => {
+            return empty == '' ? index : false;
+        }).filter(empty => typeof empty == "number");
+        if (checkWinConditionMinimax(newBoard, 'X')) {
+            return { score: -10 };
+        } else if (checkWinConditionMinimax(newBoard, 'O')) {
+            return { score: 10 };
+        } else if (availSpots.length === 0) {
+            return { score: 0 };
         }
-        return empty;
-    });
-    var availSpots = newBoard.map((empty, index) => {
-        if (empty == '') {
-            return index;
-        }
-        return false;
-    }).filter(empty => typeof empty == "number");
-    if (gameController.checkWinConditionMinimax(newBoard, 'X')) {
-        return { score: -10 };
-    } else if (gameController.checkWinConditionMinimax(newBoard, 'O')) {
-        return { score: 10 };
-    } else if (availSpots.length === 0) {
-        return { score: 0 };
-    }
-    newBoard = newBoard.map((empty, index) => {
-        if (empty == '') {
-            return index;
-        }
-        return empty;
-    })
-    var moves = [];
-    for (var i = 0; i < availSpots.length; i++) {
-        var move = {};
-        move.index = newBoard[availSpots[i]]
-        newBoard[availSpots[i]] = player;
-        if (player == 'O') {
-            var result = minimax(newBoard, 'X');
-            move.score = result.score;
-        } else {
-            var result = minimax(newBoard, 'O');
-            move.score = result.score;
-        }
+        var moves = [];
+        for (var i = 0; i < availSpots.length; i++) {
+            var move = {};
+            move.index = availSpots[i];
+            newBoard[availSpots[i]] = player;
+            if (player == 'O') {
+                var result = minimax(newBoard, 'X', difficulty);
+                move.score = result.score;
+            } else {
+                var result = minimax(newBoard, 'O', difficulty);
+                move.score = result.score;
+            }
 
-        newBoard[availSpots[i]] = move.index;
-        moves.push(move);
-    }
-    var bestMove;
-    if (player === 'O') {
-        var bestScore = -10000;
-        for (var i = 0; i < moves.length; i++) {
-            if (moves[i].score > bestScore) {
-                bestScore = moves[i].score;
-                bestMove = i;
+            newBoard[availSpots[i]] = move.index;
+            moves.push(move);
+        }
+        var bestMove;
+        if (difficulty == 'impossible') {
+            if (player === 'O') {
+                var bestScore = -10000;
+                for (var i = 0; i < moves.length; i++) {
+                    if (moves[i].score > bestScore) {
+                        bestScore = moves[i].score;
+                        bestMove = i;
+                    }
+                }
+            } else {
+                var bestScore = 10000;
+                for (var i = 0; i < moves.length; i++) {
+                    if (moves[i].score < bestScore) {
+                        bestScore = moves[i].score;
+                        bestMove = i;
+                    }
+                }
             }
         }
-    } else {
-        var bestScore = 10000;
-        for (var i = 0; i < moves.length; i++) {
-            if (moves[i].score < bestScore) {
-                bestScore = moves[i].score;
-                bestMove = i;
+        if (difficulty == 'hard') {
+            if (availSpots.length <= 3) {
+                moves = moves.sort((a, b) => (b.score - a.score)).slice(0, Math.ceil(moves.length / 2));
+                bestMove = Math.floor(Math.random() * moves.length);
+            } else {
+                if (player === 'O') {
+                    var bestScore = -10000;
+                    for (var i = 0; i < moves.length; i++) {
+                        if (moves[i].score > bestScore) {
+                            bestScore = moves[i].score;
+                            bestMove = i;
+                        }
+                    }
+                } else {
+                    var bestScore = 10000;
+                    for (var i = 0; i < moves.length; i++) {
+                        if (moves[i].score < bestScore) {
+                            bestScore = moves[i].score;
+                            bestMove = i;
+                        }
+                    }
+                }
             }
         }
+        return moves[bestMove];
     }
-    return moves[bestMove];
-}
 
-function minimaxHard(newBoard, player) {
-    newBoard = [...newBoard];
-    newBoard = newBoard.map((empty) => {
-        if (typeof empty == "number") {
-            return '';
+    let checkWinConditionMinimax = (board, player) => {
+        let gameBoardStateMatrix = [];
+        let arr = [];
+        for (let i in board) {
+            arr.push(board[i]);
+            if (i % 3 == 2) {
+                gameBoardStateMatrix.push(arr);
+                arr = [];
+            }
         }
-        return empty;
-    });
-    var availSpots = newBoard.map((empty, index) => {
-        if (empty == '') {
-            return index;
+        const checkRow = (board, player) => {
+            for (let i = 0; i < 3; i++) {
+                if (checkSingleRow(board[i], player)) {
+                    return true;
+                }
+            }
         }
-        return false;
-    }).filter(empty => typeof empty == "number");
-    if (gameController.checkWinConditionMinimax(newBoard, 'X')) {
-        return { score: -10 };
-    } else if (gameController.checkWinConditionMinimax(newBoard, 'O')) {
-        return { score: 10 };
-    } else if (availSpots.length === 0) {
-        return { score: 0 };
-    }
-    newBoard = newBoard.map((empty, index) => {
-        if (empty == '') {
-            return index;
+        const checkSingleRow = (row, player) => {
+            return row[0] == row[1] && row[0] == row[2] && row[0] != '' && row[0] == player
         }
-        return empty;
-    })
-    var moves = [];
-    for (var i = 0; i < availSpots.length; i++) {
-        var move = {};
-        move.index = newBoard[availSpots[i]]
-        newBoard[availSpots[i]] = player;
-        if (player == 'O') {
-            var result = minimax(newBoard, 'X');
-            move.score = result.score;
-        } else {
-            var result = minimax(newBoard, 'O');
-            move.score = result.score;
+        const checkDiagonal = (board, player) => {
+            return board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0] != '' && board[0][0] == player
         }
 
-        newBoard[availSpots[i]] = move.index;
-        moves.push(move);
+        const performCheck = (player) => {
+            const temporalTransposedGameBoardMatrix = gameBoardStateMatrix[0].map((col, i) => gameBoardStateMatrix.map(row => row[i]));
+            const temporalReversedGameBoardMatrix = [...gameBoardStateMatrix].reverse();
+            return checkRow(temporalTransposedGameBoardMatrix, player) ||
+                checkDiagonal(gameBoardStateMatrix, player) ||
+                checkDiagonal(temporalReversedGameBoardMatrix, player) ||
+                checkRow(gameBoardStateMatrix, player)
+        }
+        if (performCheck(player)) {
+            return true;
+        }
     }
-    var bestMove;
-    if (availSpots.length > 3) {
-        moves = moves.sort((a, b) => (b.score - a.score)).slice(0, Math.ceil(moves.length / 2));
-        bestMove = Math.floor(Math.random() * moves.length);
-    } else {
-        moves = moves.sort((a, b) => (b.score - a.score)).slice(0, 1);
-        bestMove = 0;
-    }
-    console.log(moves);
-    console.log(bestMove);
-    return moves[bestMove];
-}
+    return { minimax };
+})()
