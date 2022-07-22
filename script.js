@@ -387,6 +387,12 @@ const gameSetUp = (function() {
 let algorithmAI = (function() {
     let minimax = (newBoard, player, difficulty) => {
         newBoard = [...newBoard];
+
+        //convert values of available spots to empty values for win check
+        newBoard = newBoard.map((empty) => {
+            return typeof empty == "number" ? '' : empty;
+        });
+
         //create array with current available spots
         var availSpots = newBoard.map((empty, index) => {
             return empty == '' ? index : false;
@@ -399,11 +405,17 @@ let algorithmAI = (function() {
         } else if (availSpots.length === 0) {
             return { score: 0 };
         }
+
+        //convert values of available spots to index values for recursive
+        newBoard = newBoard.map((empty, index) => {
+            return empty == '' ? index : empty;
+        })
+
         //create array with all possible moves populated by objects {index,score}
         var moves = [];
         for (var i = 0; i < availSpots.length; i++) {
             var move = {};
-            move.index = availSpots[i];
+            move.index = newBoard[availSpots[i]];
             newBoard[availSpots[i]] = player;
             if (player == 'O') {
                 var result = minimax(newBoard, 'X', difficulty);
@@ -416,6 +428,7 @@ let algorithmAI = (function() {
             newBoard[availSpots[i]] = move.index;
             moves.push(move);
         }
+
         //choose best move by score from all available moves
         var bestMove;
         if (difficulty == 'impossible') {
@@ -437,8 +450,9 @@ let algorithmAI = (function() {
                 }
             }
         }
-        //choose best move by score if there are less than 5 moves
-        //above that it pick random from 2 best possible moves
+
+        // choose best move by score if there are less than 5 moves
+        // above that it pick random from 2 best possible moves
         if (difficulty == 'hard') {
             if (availSpots.length <= 3) {
                 moves = moves.sort((a, b) => (b.score - a.score)).slice(0, Math.ceil(moves.length / 2));
