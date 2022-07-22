@@ -17,6 +17,8 @@ const gameBoard = (function() {
     const getGameBoardState = () => {
         return gameBoardState;
     }
+
+    // restart board to untouched version
     const restartGameBoardStateDisplay = () => {
         setGameBoardState();
         displayController.displayBoardState(gameBoard.getGameBoardState());
@@ -29,11 +31,14 @@ const gameBoard = (function() {
 
 const gameController = (function() {
     const singleField = document.querySelectorAll('.single-field');
+    const restartButton = document.querySelector('.controls button:first-child');
+    const playAgainButton = document.querySelector('.controls button:nth-child(2)');
+
+    //get user click to make move
     const getUserChoice = (() => {
         singleField.forEach((field, i) => {
             field.addEventListener('click', () => {
-                const restartButtons = document.querySelectorAll('.controls button');
-                if (restartButtons[1].classList.contains('hidden')) {
+                if (playAgainButton.classList.contains('hidden')) {
                     let check = makePlayerMove(i, field);
                     if (getActivePlayer().getPlayerName() == 'Computer' && !check) {
                         toggleClickableFields() //unclickable
@@ -43,13 +48,13 @@ const gameController = (function() {
             })
         });
     })()
+
     const getActivePlayer = () => {
         player1.getActivePlayer() ? activePlayer = player1 : activePlayer = player2;
         return activePlayer;
     };
-    const restartButton = document.querySelector('.controls button:first-child');
-    const playAgainButton = document.querySelector('.controls button:nth-child(2)');
 
+    //change active player with switching text
     const changeActivePlayer = () => {
         if (player1.getActivePlayer()) {
             player2.setActivePlayer(true);
@@ -60,9 +65,9 @@ const gameController = (function() {
         }
         if (playAgainButton.classList.contains('hidden')) {
             if (getActivePlayer().getPlayerName() == 'Computer') {
-                document.querySelector('.controls>p').textContent = `Computer's turn`;
+                changeTextState(`Computer's turn`);
             } else {
-                document.querySelector('.controls>p').textContent = `Your turn ${getActivePlayer().getPlayerName()}`;
+                changeTextState(`Your turn ${getActivePlayer().getPlayerName()}`);
             }
         }
     }
@@ -70,25 +75,25 @@ const gameController = (function() {
     const makePlayerMove = (i, field) => {
         makeMove(i, field);
     }
+
+    //main function to make moves and invoking win/tie checks
     const makeMove = (i, field) => {
-        document.querySelector('.controls>p').textContent = '';
+        changeTextState(); // default text state
         let activePlayerSign = getActivePlayer().getPlayerSign();
         if (gameBoard.getGameBoardState()[i] == '') {
-            gameBoard.getGameBoardState()[i] = field.classList.add(`user-${activePlayerSign}`);
-            gameBoard.getGameBoardState()[i] = activePlayerSign;
+            field.classList.add(`user-${activePlayerSign}`); //change text sign to visual sign
+            gameBoard.getGameBoardState()[i] = activePlayerSign; //make move
             displayController.displayBoardState(gameBoard.getGameBoardState());
             if (checkWinCondition(gameBoard.getGameBoardState(), activePlayerSign)) {
                 const playersResults = document.querySelectorAll('.player-container p:nth-child(2n)');
-                player1.getActivePlayer() ? playersResults[0].textContent = player1.addWin() : playersResults[1].textContent = player2.addWin();
-                gameBoard.setGameBoardState();
-                restartButton.classList.toggle('hidden');
-                playAgainButton.classList.toggle('hidden');
+                player1.getActivePlayer() ? playersResults[0].textContent = player1.addWin() : playersResults[1].textContent = player2.addWin(); //add wins
+                gameBoard.setGameBoardState(); // default gameboard
+                toggleControlButtons(); // +playagain -restart
                 return true;
             }
             if (checkTie()) {
-                gameBoard.setGameBoardState();
-                restartButton.classList.toggle('hidden');
-                playAgainButton.classList.toggle('hidden');
+                gameBoard.setGameBoardState(); // default gameboard
+                toggleControlButtons(); // +playagain -restart
                 return true;
             }
             changeActivePlayer();
@@ -99,14 +104,13 @@ const gameController = (function() {
         const difficulty = gameSetUp.getDifficulty();
         let move;
         if (difficulty == 'easy') {
+            //make random move
             const indexedEmptyBoard = gameBoard.getGameBoardState().map((empty, index) => {
-                if (empty == '') {
-                    return index;
-                }
-                return false;
+                return empty == '' ? index : false;
             }).filter(empty => typeof empty == "number");
             move = indexedEmptyBoard[Math.floor(Math.random() * indexedEmptyBoard.length)];
         } else {
+            //use minimax algorithm
             move = algorithmAI.minimax(gameBoard.getGameBoardState(), 'O', difficulty).index;
         }
         makeMove(move, singleField[move]);
@@ -114,16 +118,13 @@ const gameController = (function() {
     }
 
     const checkWinCondition = (board, player) => {
-        let gameBoardStateMatrix = [];
-        let arr = [];
-        let gameBoardState = board;
-        for (let i in gameBoardState) {
-            arr.push(gameBoardState[i]);
-            if (i % 3 == 2) {
-                gameBoardStateMatrix.push(arr);
-                arr = [];
-            }
-        }
+        //change 1dim board to 2dim
+        let gameBoardStateMatrix = board.reduce((acc, c, i) => {
+            if (!(i % 3))
+                acc.push(board.slice(i, i + 3));
+            return acc;
+        }, []);
+
         const checkRow = (board, pos, player) => {
             for (let i = 0; i < 3; i++) {
                 if (checkSingleRow(board[i], i, pos, player)) {
@@ -148,23 +149,24 @@ const gameController = (function() {
             }
         }
         const checkDiagonal = (board, pos, player) => {
-            if (board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0] != '' && board[0][0] == player) {
-                if (pos == "mainDiagonal") {
-                    for (let i = 0; i < 3; i++) {
-                        document.querySelector(`.single-field.col${i+1}.row${i+1}`).classList.add('win');
+                if (board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0] != '' && board[0][0] == player) {
+                    if (pos == "mainDiagonal") {
+                        for (let i = 0; i < 3; i++) {
+                            document.querySelector(`.single-field.col${i+1}.row${i+1}`).classList.add('win');
+                        }
                     }
-                }
-                if (pos == "secondaryDiagonal") {
-                    for (let i = 0; i < 3; i++) {
-                        document.querySelector(`.single-field.col${3-i}.row${i+1}`).classList.add('win');
+                    if (pos == "secondaryDiagonal") {
+                        for (let i = 0; i < 3; i++) {
+                            document.querySelector(`.single-field.col${3-i}.row${i+1}`).classList.add('win');
+                        }
                     }
+                    return true;
                 }
-                return true;
             }
-        }
+            //if one of the checks return true -> perfrom check is true
         const performCheck = (player) => {
-            const temporalTransposedGameBoardMatrix = gameBoardStateMatrix[0].map((col, i) => gameBoardStateMatrix.map(row => row[i]));
-            const temporalReversedGameBoardMatrix = [...gameBoardStateMatrix].reverse();
+            const temporalTransposedGameBoardMatrix = gameBoardStateMatrix[0].map((col, i) => gameBoardStateMatrix.map(row => row[i])); //transposed matrix
+            const temporalReversedGameBoardMatrix = [...gameBoardStateMatrix].reverse(); //reversed matrix
             if (checkRow(temporalTransposedGameBoardMatrix, "cols", player) ||
                 checkDiagonal(gameBoardStateMatrix, "mainDiagonal", player) ||
                 checkDiagonal(temporalReversedGameBoardMatrix, "secondaryDiagonal", player) ||
@@ -173,14 +175,15 @@ const gameController = (function() {
             }
         }
         if (performCheck(player)) {
-            document.querySelector('.controls>p').textContent = `You won ${gameController.getActivePlayer().getPlayerName()}!`;
+            getActivePlayer().getPlayerName() == "Computer" ? changeTextState(`Computer won!`) :
+                changeTextState(`You won ${getActivePlayer().getPlayerName()}!`);
             return true;
         }
     }
 
     const checkTie = () => {
         if (!gameBoard.getGameBoardState().includes('')) {
-            document.querySelector('.controls>p').textContent = `It's a tie!`
+            changeTextState(`It's a tie!`);
             return true;
         }
     }
@@ -190,30 +193,41 @@ const gameController = (function() {
     };
 
     const playNextGame = () => {
-        document.querySelector('.controls>p').textContent = ``;
-        restartButton.classList.toggle('hidden');
-        playAgainButton.classList.toggle('hidden');
+        changeTextState();
+        gameBoard.restartGameBoardStateDisplay();
+        toggleControlButtons();
         changeActivePlayer();
         firstComputerMove();
     };
 
+    //if computer starts game then pick random move -> corner or middle (rest are not-optimal)
     const firstComputerMove = () => {
         if (getActivePlayer().getPlayerName() == 'Computer') {
             toggleClickableFields(); //unclickable
-            document.querySelector('.controls>p').textContent = `Computer's turn`;
+            changeTextState(`Computer's turn`);
             const index = [0, 2, 4, 6, 8][Math.floor(Math.random() * 5)];
             setTimeout(() => toggleClickableFields(), makeMove(index, singleField[index]), 500) // clickable
         } else {
-            document.querySelector('.controls>p').textContent = `Your turn ${getActivePlayer().getPlayerName()}`;
+            changeTextState(`Your turn ${getActivePlayer().getPlayerName()}`);
         }
     }
 
+    //toggle user possibility to click fields
     const toggleClickableFields = () => {
         singleField.forEach(field => {
             field.classList.toggle('no-click');
         })
     }
-    return { checkWinCondition, getActivePlayer, checkTie, restartGame, playNextGame };
+    const changeTextState = (value) => {
+        typeof value == "undefined" ? document.querySelector('.controls>p').textContent = `` : document.querySelector('.controls>p').textContent = `${value}`;
+    }
+
+    const toggleControlButtons = () => {
+        restartButton.classList.toggle('hidden');
+        playAgainButton.classList.toggle('hidden');
+    }
+
+    return { getActivePlayer, restartGame, playNextGame };
 })()
 
 const Player = (name) => {
@@ -255,6 +269,9 @@ const player2 = Player('Computer');
 const gameSetUp = (function() {
     const startButton = document.querySelectorAll('.header button')
     const form = document.querySelector('form');
+    const labels = document.querySelectorAll('label');
+    const inputFields = document.querySelectorAll('.input-field');
+    const inputs = document.querySelectorAll('.input-field input');
     let difficulty = '';
 
     const hideElement = (element) => {
@@ -284,11 +301,8 @@ const gameSetUp = (function() {
             toggleElement(button)
         });
     }
-    const startPlayersGame = () => {
+    const setPlayersGame = () => {
         showElement('form');
-        const labels = document.querySelectorAll('label');
-        const inputFields = document.querySelectorAll('.input-field');
-        const inputs = document.querySelectorAll('.input-field input');
         showElement(labels[0]);
         hideElement(labels[1]);
         showElement(inputFields[1]);
@@ -298,11 +312,8 @@ const gameSetUp = (function() {
         inputs[1].value = '';
         inputs[1].disabled = false;
     }
-    const startAIGame = () => {
+    const setAIGame = () => {
         showElement('form');
-        const labels = document.querySelectorAll('label');
-        const inputFields = document.querySelectorAll('.input-field');
-        const inputs = document.querySelectorAll('.input-field input');
         hideElement(labels[0]);
         showElement(labels[1]);
         hideElement(inputFields[1]);
@@ -338,8 +349,9 @@ const gameSetUp = (function() {
         startButton[1].disabled = false;
     }
 
-    startButton[0].addEventListener('click', startAIGame);
-    startButton[1].addEventListener('click', startPlayersGame);
+    //set up event listeners
+    startButton[0].addEventListener('click', setAIGame);
+    startButton[1].addEventListener('click', setPlayersGame);
     startButton[2].addEventListener('click', setInterface);
     form.addEventListener('submit', e => startGame(e));
     form.addEventListener('submit', e => setDifficulty(e));
@@ -363,13 +375,11 @@ const gameSetUp = (function() {
         playersNames[2].textContent = player2.getPlayerName();
         document.querySelector('.controls>p').textContent = `Your turn ${gameController.getActivePlayer().getPlayerName()}`
     }
-    const restartGameQuery = (() => {
+    const setGameQueries = (() => {
         document.querySelector('.controls button:first-child').addEventListener('click', gameController.restartGame);
-    })();
-
-    const playNextGameQuery = (() => {
         document.querySelector('.controls button:nth-child(2)').addEventListener('click', gameController.playNextGame);
     })();
+
 
     return { getDifficulty };
 })()
@@ -377,9 +387,11 @@ const gameSetUp = (function() {
 let algorithmAI = (function() {
     let minimax = (newBoard, player, difficulty) => {
         newBoard = [...newBoard];
+        //create array with current available spots
         var availSpots = newBoard.map((empty, index) => {
             return empty == '' ? index : false;
         }).filter(empty => typeof empty == "number");
+        //set scores if end of board
         if (checkWinConditionMinimax(newBoard, 'X')) {
             return { score: -10 };
         } else if (checkWinConditionMinimax(newBoard, 'O')) {
@@ -387,6 +399,7 @@ let algorithmAI = (function() {
         } else if (availSpots.length === 0) {
             return { score: 0 };
         }
+        //create array with all possible moves populated by objects {index,score}
         var moves = [];
         for (var i = 0; i < availSpots.length; i++) {
             var move = {};
@@ -403,6 +416,7 @@ let algorithmAI = (function() {
             newBoard[availSpots[i]] = move.index;
             moves.push(move);
         }
+        //choose best move by score from all available moves
         var bestMove;
         if (difficulty == 'impossible') {
             if (player === 'O') {
@@ -423,6 +437,8 @@ let algorithmAI = (function() {
                 }
             }
         }
+        //choose best move by score if there are less than 5 moves
+        //above that it pick random from 2 best possible moves
         if (difficulty == 'hard') {
             if (availSpots.length <= 3) {
                 moves = moves.sort((a, b) => (b.score - a.score)).slice(0, Math.ceil(moves.length / 2));
@@ -451,15 +467,11 @@ let algorithmAI = (function() {
     }
 
     let checkWinConditionMinimax = (board, player) => {
-        let gameBoardStateMatrix = [];
-        let arr = [];
-        for (let i in board) {
-            arr.push(board[i]);
-            if (i % 3 == 2) {
-                gameBoardStateMatrix.push(arr);
-                arr = [];
-            }
-        }
+        let gameBoardStateMatrix = board.reduce((acc, c, i) => {
+            if (!(i % 3))
+                acc.push(board.slice(i, i + 3));
+            return acc;
+        }, []);
         const checkRow = (board, player) => {
             for (let i = 0; i < 3; i++) {
                 if (checkSingleRow(board[i], player)) {
