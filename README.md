@@ -26,17 +26,18 @@ Project inspired by [The Odin Project](https://www.theodinproject.com/) Full Sta
 - Combine flex & grid systems
 - Code refactoring
 - How to approach algorithms
+- Work with Git branches
 
 ## Project features
 
-- playing against second player or AI
-- three difficulty levels - easy, hard(medium), impossible
-- naming players
-- losing/tying player starts new board
-- restart & play again states
-- wins counter for current players
-- fully responsive for all screen sizes
+- Playing against second player or AI
+- Three difficulty levels - easy, hard(medium), impossible
+- Naming players
+- Losing/tying player starts new board
+- Restart & play again states
+- Wins counter for current players
+- Fully responsive for all screen sizes
 
 ## To do
 
-- animations
+- Animations
